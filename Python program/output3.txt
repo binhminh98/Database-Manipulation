@@ -1,0 +1,35 @@
+Task type: D
+Error message: update or delete on table "exam" violates foreign key constraint "entry_excode_fkey" on table "entry"
+DETAIL:  Key (excode)=(VB01) is still referenced from table "entry".
+
+Task type: A
+Error message: duplicate key value violates unique constraint "student_pkey"
+DETAIL:  Key (sno)=(100) already exists.
+
+Task type: B
+Error message: new row for relation "exam" violates check constraint "exam_exdate_check"
+DETAIL:  Failing row contains (VB03, Visual Basic 3, London, 2022-05-02, 19:00:00).
+
+Task type: E
+Error message: This student has entered this exam once
+CONTEXT:  PL/pgSQL function exam_entry_restriction() line 7 at RAISE
+
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: VB01
+ 
+Task type: E
+Error message: This student cannot take more than one examination on the same day
+CONTEXT:  PL/pgSQL function exam_entry_restriction() line 14 at RAISE
+
+Task type: F
+Error message: Wrong input value
+ 
+Task type: F
+Error message: new row for relation "entry" violates check constraint "entry_egrade_check"
+DETAIL:  Failing row contains (9, VB01, 300, 110.00).
+
+Task type: P
+Error message: Wrong input value
+ 
+
+Exit program!

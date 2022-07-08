@@ -1,0 +1,30 @@
+D
+VB01
+A
+100
+Smith, A.
+bj@myhome.com
+B
+VB03
+Visual Basic 3
+London
+2022-05-02
+19:00
+E
+VB01
+100 
+E
+VB01
+500   
+E
+SQL1
+500
+F
+999
+50
+F
+9
+110
+P
+188
+X

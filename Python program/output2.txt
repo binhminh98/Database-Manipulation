@@ -1,0 +1,86 @@
+Task type: P. The result is: 
+ 
+Student Name    Location    Exam Code    Exam title          Exam Date    Exam Time
+--------------  ----------  -----------  ------------------  -----------  -----------
+Smith, A.       London      VB01         Visual Basic 1      2022-06-01   09:00:00
+Smith, A.       London      VB02         Visual Basic 2      2022-06-02   18:00:00
+Smith, A.       Norwich     XQ02         Xquery 2            2022-06-03   09:00:00
+Smith, A.       London      PMAN         Project Management  2022-06-04   09:00:00
+ 
+Task type: P. The result is: 
+ 
+Student Name    Location    Exam Code    Exam title          Exam Date    Exam Time
+--------------  ----------  -----------  ------------------  -----------  -----------
+Brown, B.       Norwich     XQ02         Xquery 2            2022-06-03   09:00:00
+Brown, B.       London      PMAN         Project Management  2022-06-04   09:00:00
+Brown, B.       Norwich     SQL1         SQL 1               2022-06-01   09:00:00
+Brown, B.       London      VB02         Visual Basic 2      2022-06-02   18:00:00
+ 
+Task type: Q. The result is: 
+ 
+Exam Code    Student Name      Grade  Result
+-----------  --------------  -------  -----------
+PMAN         Brown, B.                Not taken
+PMAN         Smith, A.            50  Pass
+SQL1         Brown, B.            90  Distinction
+VB01         Green, C.                Not taken
+VB01         Smith, A.            50  Pass
+VB02         Brown, B.            20  Fail
+VB02         Smith, A.            55  Pass
+XQ02         Brown, B.                Not taken
+XQ02         Smith, A.            45  Fail
+ 
+Task type: R. The result is: 
+ 
+Exam Code    Student Name      Grade  Result
+-----------  --------------  -------  ---------
+VB01         Green, C.                Not taken
+VB01         Smith, A.            50  Pass
+ 
+Task type: S. The result is: 
+ 
+Student Name    Exam Code    Exam Title            Grade
+--------------  -----------  ------------------  -------
+Smith, A.       PMAN         Project Management       50
+Smith, A.       VB01         Visual Basic 1           50
+Smith, A.       VB02         Visual Basic 2           55
+Smith, A.       XQ02         Xquery 2                 45
+ 
+Task type: S. The result is: 
+ 
+Student Name    Exam Code    Exam Title            Grade
+--------------  -----------  ------------------  -------
+Brown, B.       PMAN         Project Management
+Brown, B.       SQL1         SQL 1                    90
+Brown, B.       VB02         Visual Basic 2           20
+Brown, B.       XQ02         Xquery 2
+ 
+Task type: T. The result is: 
+ 
+Student Name    Membership Status
+--------------  -------------------
+Smith, A.       Accredited
+ 
+Task type: T. The result is: 
+ 
+Student Name    Membership Status
+--------------  -------------------
+Brown, B.       Pending
+ 
+Task type: V
+Error message: Wrong input value
+ 
+Task type: C. The result is: 
+You have successfully deleted a student with sno: 200
+ 
+Task type: V. The result is: 
+ 
+  Entry Number  Exam Code      Student Number  Timestamp                   User
+--------------  -----------  ----------------  --------------------------  --------
+             7  XQ02                      200  2021-12-13 17:18:27.257014  tda21hwu
+             8  PMAN                      200  2021-12-13 17:18:27.257014  tda21hwu
+             5  SQL1                      200  2021-12-13 17:18:27.257014  tda21hwu
+             6  VB02                      200  2021-12-13 17:18:27.257014  tda21hwu
+ 
+
+Exit program!

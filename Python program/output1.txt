@@ -1,0 +1,77 @@
+Task type: A. The result is: 
+You have successfully inserted a student: Smith, A.
+ 
+Task type: A. The result is: 
+You have successfully inserted a student: Brown, B.
+ 
+Task type: A. The result is: 
+You have successfully inserted a student: Green, C.
+ 
+Task type: A. The result is: 
+You have successfully inserted a student: White, D.
+ 
+Task type: A. The result is: 
+You have successfully inserted a student: Young, E.
+ 
+Task type: B. The result is: 
+You have successfully inserted an exam with excode: VB01
+ 
+Task type: B. The result is: 
+You have successfully inserted an exam with excode: VB02
+ 
+Task type: B. The result is: 
+You have successfully inserted an exam with excode: SQL1
+ 
+Task type: B. The result is: 
+You have successfully inserted an exam with excode: XQ02
+ 
+Task type: B. The result is: 
+You have successfully inserted an exam with excode: PMAN
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: VB01
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: VB02
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: XQ02
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: PMAN
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: SQL1
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: VB02
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: XQ02
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: PMAN
+ 
+Task type: E. The result is: 
+You have successfully inserted an examination entry with excode: VB01
+ 
+Task type: F. The result is: 
+You have successfully updated a student's grade with eno: 1 to: 50
+ 
+Task type: F. The result is: 
+You have successfully updated a student's grade with eno: 2 to: 55
+ 
+Task type: F. The result is: 
+You have successfully updated a student's grade with eno: 3 to: 45
+ 
+Task type: F. The result is: 
+You have successfully updated a student's grade with eno: 4 to: 50
+ 
+Task type: F. The result is: 
+You have successfully updated a student's grade with eno: 5 to: 90
+ 
+Task type: F. The result is: 
+You have successfully updated a student's grade with eno: 6 to: 20
+ 
+
+Exit program!

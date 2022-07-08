@@ -1,0 +1,97 @@
+Z
+A
+100
+Smith, A.
+bj@myhome.com
+A
+200
+Brown, B.
+bb@myhome.com
+A
+300
+Green, C.
+cg@myhome.com
+A
+400
+White, D.
+dw@myhome.com
+A
+500
+Young, E.
+ey@myhome.com
+B
+VB01
+Visual Basic 1
+London
+2022-06-01
+09:00
+B
+VB02
+Visual Basic 2
+London
+2022-06-02
+18:00
+B
+SQL1
+SQL 1
+Norwich
+2022-06-01
+09:00
+B
+XQ02
+Xquery 2
+Norwich
+2022-06-03
+09:00
+B
+PMAN
+Project Management
+London
+2022-06-04
+09:00
+E
+VB01
+100
+E
+VB02
+100   
+E
+XQ02
+100
+E
+PMAN
+100
+E
+SQL1
+200
+E
+VB02
+200
+E
+XQ02
+200
+E
+PMAN
+200
+E
+VB01
+300
+F
+1
+50
+F
+2
+55
+F
+3
+45
+F
+4
+50
+F
+5
+90
+F
+6
+20
+X
