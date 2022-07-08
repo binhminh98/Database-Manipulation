@@ -1,0 +1,491 @@
+-- DDL PART
+-- Create new schema and set search path
+
+CREATE SCHEMA database_coursework;
+SET search_path to database_coursework;
+
+-- Create tables
+
+CREATE TABLE exam (
+    excode       CHAR(4) PRIMARY KEY,
+    extitle      VARCHAR(20) NOT NULL
+		CHECK (extitle <> ''),
+    exlocation   VARCHAR(20) NOT NULL
+		CHECK (exlocation <> ''),
+    exdate       DATE NOT NULL
+		CHECK (exdate BETWEEN '2022-06-01' AND '2022-06-30'),  --All currently planned examinations are scheduled for the month of June 2022.
+    extime       TIME NOT NULL
+		CHECK (extime BETWEEN '09:00:00' AND '18:00:00') -- No examinations start before 09:00 hours or after 18:00 hours.
+);
+
+DROP TABLE exam;
+	
+CREATE TABLE student (
+    sno          INTEGER PRIMARY KEY,
+    sname        VARCHAR(20) NOT NULL
+		CHECK (sname <> ''),
+    semail       VARCHAR(20) NOT NULL
+		CHECK (semail <> '')
+);
+
+DROP TABLE exam;
+
+CREATE TABLE entry (
+    eno          INTEGER NOT NULL,
+    excode       CHAR(4) NOT NULL,
+    sno          INTEGER NOT NULL,
+    egrade       DECIMAL(5,2) DEFAULT NULL -- When an entry is first made this field is empty
+		CHECK (egrade between 0 AND 100), -- The range of grades is 0 to 100
+	CONSTRAINT entry_pk PRIMARY KEY (eno),
+	FOREIGN KEY (excode) REFERENCES exam
+			ON DELETE RESTRICT -- The examination must not have any current (not cancelled) entries to be deleted.
+			ON UPDATE RESTRICT,
+	FOREIGN KEY (sno) REFERENCES student
+			ON DELETE CASCADE -- If a student withdraws from the society, all his/her examination entries are cancelled
+			ON UPDATE RESTRICT
+);
+
+DROP TABLE entry;
+
+CREATE TABLE cancel (
+    eno          INTEGER NOT NULL,
+    excode       CHAR(4) NOT NULL,
+    sno          INTEGER NOT NULL,
+    cdate        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    cuser        VARCHAR(128) NOT NULL,
+	CONSTRAINT cancel_pk PRIMARY KEY (eno,cdate)
+);
+-- no foreign keys because: the cancelled entries must retain their student reference 
+-- number even though there is no longer a matching row in the student table.
+	
+DROP TABLE cancel;
+
+-- Trigger to insert into cancel table
+
+CREATE OR REPLACE FUNCTION cancel_entry()
+	RETURNS TRIGGER AS
+	$BODY$
+	BEGIN 
+	INSERT INTO cancel(eno,excode,sno,cdate,cuser)
+	VALUES (old.eno,old.excode,old.sno, current_timestamp, user);
+	RETURN NEW;
+	END;
+	$BODY$
+	LANGUAGE PLPGSQL;
+	
+CREATE TRIGGER entry_cancellation
+AFTER DELETE ON entry
+FOR EACH ROW
+EXECUTE PROCEDURE cancel_entry();
+	
+-- Trigger for incrementing reference number
+	
+CREATE OR REPLACE FUNCTION increment_reference_number()
+	RETURNS TRIGGER AS
+	$BODY$
+	BEGIN
+		UPDATE entry en SET en.eno = ((SELECT COALESCE(MAX(en.eno),0) FROM entry)+1) -- The reference numbers start at 1. Incremented by 1 each time a new entry (for any examination) is made.
+		WHERE new.eno = en.eno;
+	END;
+	$BODY$
+	LANGUAGE PLPGSQL;
+
+DROP FUNCTION increment_reference_number() CASCADE;
+
+CREATE TRIGGER update_reference_number
+AFTER INSERT ON entry
+FOR EACH ROW
+EXECUTE PROCEDURE increment_reference_number();
+	
+-- Trigger for: a student can only enter a specific examination once in a year 
+-- and the student cannot take more than one examination on the same day.
+	
+CREATE OR REPLACE FUNCTION exam_entry_restriction()
+	RETURNS TRIGGER AS
+	$BODY$
+	BEGIN
+	IF 
+		(new.excode IN 
+		(SELECT excode FROM entry en
+		 WHERE new.sno = en.sno)) 
+	THEN RAISE EXCEPTION 'This student has entered this exam once';
+		RETURN NULL;
+	ELSIF
+		(SELECT exdate FROM exam ex WHERE new.excode = ex.excode) 
+		 IN 
+		(SELECT exdate FROM entry en,exam ex 
+	 	 WHERE en.excode = ex.excode AND new.sno = en.sno)
+	THEN RAISE EXCEPTION 'This student cannot take more than one examination on the same day';
+		RETURN NULL;
+	ELSE
+		RETURN NEW;
+	END IF;
+	END;
+	$BODY$
+	LANGUAGE PLPGSQL;
+		 
+CREATE TRIGGER restrict_exam_entry
+BEFORE INSERT ON entry
+FOR EACH ROW
+EXECUTE PROCEDURE exam_entry_restriction();
+
+-- View for total entry of an exam
+CREATE VIEW total_entry AS
+SELECT e.excode AS exam_code, COUNT(en.eno) AS total_entry 
+	FROM exam e LEFT JOIN entry en ON e.excode = en.excode
+	GROUP BY e.excode;
+
+DROP view total_entry;
+
+-- View for total entry of a student
+
+CREATE VIEW student_entry AS
+SELECT s.sno AS student_number, sname AS student_name, en.excode AS exam_code
+	FROM student s LEFT JOIN entry en ON s.sno =  en.sno;
+	
+DROP VIEW student_entry;
+
+-- Create Indexes
+
+CREATE INDEX enexcodeidx ON entry(excode);
+CREATE INDEX ensnoidx ON entry(sno);
+CREATE INDEX snameidx ON student(sname);
+CREATE INDEX engradeidx ON entry(egrade);
+
+-- Insert test data
+-- Exam table
+
+-- SET datestyle = "ISO, DMY"; -- convert into uniform datetype
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('VB01','VB paper 1','SCI 2.27','2022-06-17','09:00:00');
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('SQL1','SQL paper 1','SCI 2.28','2022-06-17','01:00:00'); -- check time before 9:00 AM
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('VB02','VB paper 2','SCI 2.38','2022-06-22','20:00:00'); -- check time after 18:00 PM
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('SQL2','SQL paper 2','SCI 2.37','2022/06/23','13:00:00');
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('VB03','VB paper 3','Blackdale Building','2022/06/30','12:00:00');
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('AP01','AP paper 1','Sportpark','2022/06/13','15:00:00');
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('AP02','AP paper 2','TPSC LT','2022/06/17','16:00:00');
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('RT01','RT paper 1','NBS','2022-06-08','17:00:00');
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('RT02','RT paper 2','Blackdale Building','2022-06-15','18:00:00');
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('RT03','RT paper 3','SCI 2.27','2022-06-28','13:00:00');
+
+SELECT * FROM exam;
+DELETE FROM exam;		 
+		 
+-- Student table
+
+INSERT INTO student(sno,sname,semail)
+	VALUES (101,'Minh. Lai','M.Lai@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (102,'Huy. Nguyen','H.Nguyen@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (103,'Huong. Tran','H.Tran@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (104,'Chi. Pham','C.Pham@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (105,'Kha. Pham','K.Pham@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (106,'Nguyen. Nguyen','N.Nguyen@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (107,'Dung. Nguyen','D.Nguyen@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (108,'Hanh. Nguyen','H.Nguyen@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (109,'Trinh. Dao','T.Dao@gmail.com');
+INSERT INTO student(sno,sname,semail)
+	VALUES (110,'Duong. Tran','D.Tran@gmail.com');
+
+SELECT * FROM student;
+DELETE FROM student;		 
+		 
+-- Entry table
+INSERT INTO entry(eno,excode,sno) 									-- test default entry of grade
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'AP02',110);
+INSERT INTO entry(eno,excode,sno) 									-- test entry on the same day
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'VB01',110);
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'VB02',110);
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'VB03',109);
+INSERT INTO entry(eno,excode,sno) 									-- test same entry for one year
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'VB03',109);
+INSERT INTO entry(eno,excode,sno,egrade) 							-- test insert grade between 0 and 100
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'RT01',108,60);
+INSERT INTO entry(eno,excode,sno,egrade) 							-- test insert grade > 100
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'RT02',103,300);
+INSERT INTO entry(eno,excode,sno,egrade) 							-- test insert grade < 0
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'RT03',102,-10);
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'AP01',101);
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'RT01',106);
+
+SELECT * FROM entry;
+DELETE FROM entry;
+
+-- Check for cancel entries
+
+SELECT * FROM cancel;
+
+-- Insert test data 2021
+
+DELETE FROM entry;
+
+DELETE FROM student;
+
+DELETE FROM exam;
+
+DELETE FROM cancel;
+
+
+
+INSERT INTO exam VALUES 
+
+    ('VB01', 'Visual Basic 1', 'London', '2022-06-01', '09:00'),
+
+    ('VB02', 'Visual Basic 2', 'London', '2022-06-02', '18:00'),
+
+    ('SQL1', 'SQL 1', 'Norwich', '2022-06-01', '09:00'),
+
+    ('XQ02', 'Xquery 2', 'Norwich', '2022-06-03', '09:00'),
+
+    ('PMAN', 'Project Management', 'London', '2022-06-04', '09:00');
+
+
+
+INSERT INTO student VALUES
+
+    (100, 'Smith, A.', 'bj@myhome.com'),
+
+    (200, 'Brown, B.', 'bb@myhome.com'),
+
+    (300, 'Green, C.', 'cg@myhome.com'),
+
+    (400, 'White, D.', 'dw@myhome.com'),
+
+    (500, 'Young, E.', 'ey@myhome.com');
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'VB01', 100);
+	
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'VB02', 100);   
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'XQ02', 100);
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'PMAN', 100);
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'SQL1', 200);
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'VB02', 200);
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'XQ02', 200);
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'PMAN', 200);
+
+INSERT INTO entry(eno, excode, sno)
+
+    VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry) + 1, 'VB01', 300);
+
+UPDATE entry SET
+
+    egrade = 50
+
+    WHERE eno = 1;
+
+UPDATE entry SET
+
+    egrade = 55
+
+    WHERE eno = 2;
+
+UPDATE entry SET
+
+    egrade = 45
+
+    WHERE eno = 3;
+
+UPDATE entry SET
+
+    egrade = 50
+
+    WHERE eno = 4;
+
+UPDATE entry SET
+
+    egrade = 90
+
+    WHERE eno = 5;
+
+UPDATE entry SET
+
+    egrade = 20
+
+    WHERE eno = 6;
+
+
+--  TO CHECK DATA ENTERED CORRECTLY
+
+Select 'Exam', count(*) from exam-- returns 5
+UNION
+select 'Student', count(*) from student --returns 5
+UNION 
+Select 'Entry', count(*) from entry-- returns 9
+UNION
+Select 'Cancel', count(*) from cancel; -- returns 0
+
+-- DML PART
+-- TASKS:
+-- A. Insert a new student member of the society.
+
+INSERT INTO student(sno,sname,semail)
+	VALUES (600,'Peterson, J','PeteJ@myhome.com');
+	
+-- B. Insert a new examination for the coming year.
+
+INSERT INTO exam(excode,extitle,exlocation,exdate,extime)
+	VALUES ('VB03','Visual Basic 3','London','2022-06-03','09:00');
+
+-- C. Delete a student. This happens if a student withdraws from the society. 
+-- All the examination entries for the student must be cancelled. 
+-- The cancelled entries must retain their student reference number even though there is 
+-- no longer a matching row in the student table.
+
+SELECT * FROM student_entry;
+DELETE FROM student WHERE sno = '200';
+SELECT * FROM cancel;
+
+-- D. Delete an examination. Examinations that have no entries may be deleted from the database. 
+-- The examination must not have any current (not cancelled) entries.
+
+DELETE FROM exam WHERE excode = 'SQL1';
+
+--  E. Insert an examination entry. A student can only enter a specific examination once in a year. 
+-- The student cannot take more that one examination on the same day.
+
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'VB03',100);
+
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'VB01',300); -- test same entry for one year
+
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'SQL1',300); -- test entry on the same day
+	
+INSERT INTO entry(eno,excode,sno)
+	VALUES ((SELECT COALESCE(MAX(eno),0) FROM entry)+1,'VB02',300); -- normal entry
+
+-- F. Update an entry. 
+-- This records the grade awarded by the examiners to an entry made by a student for an examination. 
+-- The entry is specified by entry reference number.
+
+UPDATE entry SET egrade = 60 WHERE eno = 10;
+
+-- P. Produce a table showing the examination timetable for a given student. 
+-- The student is specified by his/her student membership number. 
+-- The timetable should contain the student's name and the location, code, title, day
+-- and time of each examination for which the student has entered.
+
+SELECT sname AS student_name, exlocation AS exam_location, e.excode AS exam_code, 
+extitle AS exam_title, exdate AS exam_date, extime AS exam_time
+	FROM exam e, student s, entry en
+	WHERE e.excode = en.excode AND s.sno = en.sno AND s.sno = 200;
+	
+-- Q. Produce a table showing the result obtained by each student for each examination. The table should be 
+-- sorted by examination code and then by student name. If the student is awarded a grade of 70% or more then the 
+-- result is to be shown as 'Distinction', a grade of at least 50% but less than 70% is to be shown as 'Pass' 
+-- and grades below 50% are to be shown as 'Fail'. If the student has not taken the examination then the result is 
+-- shown as 'Not taken'.
+
+-- Function to classify student's grade
+
+CREATE OR REPLACE FUNCTION classify_grade(entry)
+	RETURNS TABLE (results VARCHAR(30)) AS
+	$BODY$
+	SELECT
+		CASE
+			WHEN egrade >= 70 THEN 'Distinction'
+			WHEN (egrade >= 50 AND egrade < 70) THEN 'Pass'
+			WHEN egrade IS NULL THEN 'Not taken'
+			ELSE 'Fail'
+			END AS results
+	FROM entry en WHERE en.eno = $1.eno;
+	$BODY$
+	LANGUAGE SQL;
+
+-- Q. Produce a table showing the result obtained by each student for each examination.
+
+SELECT en.excode AS exam_code, sname AS student_name, egrade AS grade, classify_grade(en.*) AS results
+	FROM entry en, student s WHERE en.sno = s.sno
+	ORDER BY en.excode, sname;
+
+-- R. As Q above but for a given examination. The examination is specified by examination code.
+
+SELECT en.excode AS exam_code, sname AS student_name, egrade AS grade, classify_grade(en.*) AS results
+	FROM entry en, student s WHERE en.sno = s.sno AND excode = 'VB01'
+	ORDER BY en.excode, sname;
+
+-- S. Produce a table showing details of all examinations taken by a student. The student is specified by his/her 
+-- student membership number. The table should show the student's name, the examination code and title of each 
+-- examination taken, and the numeric grades awarded to the student. The table should be sorted by examination code.
+
+SELECT sname AS student_name, e.excode AS exam_code, extitle AS exam_title, egrade AS grade
+	FROM exam e, student s, entry en
+	WHERE e.excode = en.excode AND s.sno = en.sno AND s.sno = '100'
+	ORDER BY e.excode;
+
+-- T. Given a specific student membership number, display the name of the student 
+-- and their membership status in the society. To become an accredited member of 
+-- the society a student must have taken at least four examinations in the current year
+-- and have an average of at least 50% in these examinations. Students that meet these requirements
+-- are shown as having a membership status of 'Accredited', all others are shown as 'Pending'.
+
+-- Function to classify students
+CREATE OR REPLACE FUNCTION classify_student(student,integer)
+	RETURNS TABLE (membership_status VARCHAR(30)) AS
+	$BODY$
+	SELECT
+		CASE
+			WHEN 
+				(SELECT COUNT(egrade) FROM entry en WHERE en.sno = $2) >= 4
+				AND
+				(SELECT (SUM(egrade)/COUNT(egrade)) FROM entry en WHERE egrade IS NOT NULL AND en.sno = $2) >= 50	
+				THEN 'Accredited'
+			ELSE 'Pending'
+		END AS membership_status
+	FROM student s LEFT JOIN entry en ON s.sno = en.sno WHERE $1.sno = s.sno AND s.sno = $2;
+	$BODY$
+	LANGUAGE SQL;
+	
+-- T. Display membership status for student number: ‘200’
+
+SELECT DISTINCT sname, classify_student(s.*,200) AS membership_status 
+	FROM student s LEFT JOIN entry en ON s.sno = en.sno;
+
+-- V. View the details of all cancelled entries for a specific student.
+
+SELECT * FROM cancel WHERE sno = 100;
+
+-- X. A task code sent to close down the server application program.
